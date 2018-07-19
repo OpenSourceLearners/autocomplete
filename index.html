@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>demo</title>
+    <link rel="stylesheet" type="text/css" href="css/autocomplete.css" />
+</head>
+<body>
+<input type="text" id="input" />
+<script src="js/jquery.js"></script>
+<script src="js/autocomplete.js"></script>
+<script>
+    $(function () {
+        $('#input').autocomplete({
+            data: ['值1', '值2', '值3', '值4']
+        });
+    });
+</script>
+</body>
+</html>

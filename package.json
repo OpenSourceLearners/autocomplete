@@ -1,0 +1,19 @@
+{
+  "name": "autocomplete",
+  "version": "1.0.0",
+  "description": "输入下拉插件",
+  "main": "autocomplete.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenSourceLearners/autocomplete.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/OpenSourceLearners/autocomplete/issues"
+  },
+  "homepage": "https://github.com/OpenSourceLearners/autocomplete#readme"
+}
