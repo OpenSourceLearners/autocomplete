@@ -1,7 +1,7 @@
 @charset "UTF-8";
 .autocomplete {
     width: 100px;
-    position: fixed;
+    position: absolute;
     display: none;
     margin: 0;
     padding: 0;

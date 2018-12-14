@@ -16,8 +16,10 @@
         root.returnExports = factory(jQuery);
     }
 })(this, function ($) {
+    // 唯一标识符
+    var uniqueIdentifier = '__autocomplete__';
     // 判断是否安装此插件
-    if ($.fn.autocomplete) return ;
+    if ($.fn.autocomplete && $.fn.autocomplete._name && $.fn.autocomplete._name === uniqueIdentifier) return
 
     /********* 工具方法 *********/
     /**
@@ -285,6 +287,7 @@
      * @param selectedIndex
      */
     Autocomplete.prototype.setSelectionIndex = function (selectedIndex) {
+        if (this.selectedIndex == selectedIndex) return
         if (selectedIndex < -1) selectedIndex = -1;
         this.selectedIndex = selectedIndex;
         var $active = this.$select.find('li:eq('+ this.selectedIndex +')');
@@ -294,7 +297,7 @@
 
     /*********** 扩展方法 *************/
     // 继承输入下拉方法
-    $.fn.autocomplete = function (options, param) {
+    function autocomplete (options, param) {
         // 初始化配置
         if (typeof options === 'object') {
             options = $.extend({}, Autocomplete.DEFAULTOPTIONS, options);
@@ -315,4 +318,14 @@
         // 支持链式调用
         return this;
     }
+    // 用于识别同名不同插件
+    autocomplete._name = uniqueIdentifier;
+    // 判断插件冲突
+    var old = $.fn.autocomplete
+    if($.fn.autocomplete) {
+        autocomplete.noConflict = function () {
+            return old;
+        }
+    }
+    $.fn.autocomplete = autocomplete;
 });
