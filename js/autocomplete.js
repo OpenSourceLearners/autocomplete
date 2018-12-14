@@ -1,5 +1,8 @@
-/**
+/**===================================================
  * 输入下拉插件
+ * @author xiaoming<2389640655@qq.com>
+ * @version 1.0.1
+ * ===================================================
  */
 ;(function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -68,6 +71,7 @@
         this.$select = null;
         this._data = options.data || [];
         this.lock = false;
+        this.selectedIndex = -1;
         // 判断是否有ajax请求地址
         if (typeof options.ajax === 'string') {
             this.ajaxRenderOptions();
@@ -87,6 +91,8 @@
         handleData: null,
         params: {}
     }
+
+    Autocomplete.prototype.version = 'v1.0.1';
 
     /**
      * 设置配置
@@ -120,23 +126,39 @@
      * 生成下拉
      */
     Autocomplete.prototype.renderOptions = function () {
-        var html = ['<ul>'];
+        // var html = ['<ul>'];
+        // var that = this;
+        // var render = this.options.render;
+        // $.each(this._data, function (i, item) {
+        //     var type = typeof item;
+        //     html.push('<li data-value="'+ (type === 'object' ? item[that.valueKey] : item) +'">');
+        //     if (typeof render === 'function') {
+        //         html.push(that.options.render(item));
+        //     } else if (typeof render === 'string') {
+        //         html.push(stringTemplate(render, item));
+        //     } else {
+        //         html.push(type === 'object' ? item[that.htmlKey] : item);
+        //     }
+        //     html.push('</li>');
+        // });
+        // html.push('</ul>');
+        // this.$select = $(html.join('')).addClass(this.options.selectClass.join(' '));
+        var $select = $('<ul></ul>');
         var that = this;
         var render = this.options.render;
         $.each(this._data, function (i, item) {
             var type = typeof item;
-            html.push('<li data-value="'+ (type === 'object' ? item[that.valueKey] : item) +'">');
+            var label = type === 'object' ? item[that.htmlKey] : item;
             if (typeof render === 'function') {
-                html.push(that.options.render(item));
+                label = render(item);
             } else if (typeof render === 'string') {
-                html.push(stringTemplate(render, item));
-            } else {
-                html.push(type === 'object' ? item[that.htmlKey] : item);
+                label = stringTemplate(render, item);
             }
-            html.push('</li>');
-        });
-        html.push('</ul>');
-        this.$select = $(html.join('')).addClass(this.options.selectClass.join(' '));
+            var $li = $('<li data-value="'+ (type === 'object' ? item[that.valueKey] : item) +'">'+ label +'</li>');
+            $li.data('data', item);
+            $select.append($li);
+        })
+        this.$select = $select.addClass(this.options.selectClass.join(' '));
         $('body').append(this.$select);
     }
 
@@ -144,7 +166,7 @@
      * 事件绑定
      */
     Autocomplete.prototype.bindEvent = function () {
-        var that = this;
+        // var that = this;
         this.$element.on('focus.show', $.proxy(this.onShowSelect, this));
         this.$element.on('blur.hide', $.proxy(this.onHideSelect, this));
         this.$element.on('keyup.instruct', $.proxy(this.onInstruct, this));
@@ -167,7 +189,8 @@
         this.$select.css(css).addClass('is-show');
         // var $active = $('li:contains('+ this.$element.val() +')', this.$select);
         // this.selected($active.length && this.$element.val() ? $active : $('li:first', this.$select));
-        lock || this.selected($('li:first', this.$select));
+        if (!lock) this.selected(this.$select.find('li:eq('+ this.selectedIndex +')'));
+        // lock || this.selected($('li:first', this.$select));
     }
 
     /**
@@ -180,7 +203,7 @@
     }
 
     /**
-     * 填充值
+     * 选中填充值
      * @param event
      */
     Autocomplete.prototype.onFill = function (event) {
@@ -188,6 +211,7 @@
         if (event.type === 'mousedown') {
             this.$element.trigger('focus.show', true);
         } else if (event.type === 'mouseup') {
+            this.setSelectionIndex($this.index())
             this.$element.val($this.attr('data-value'));
             this.$element.trigger('blur.hide');
         }
@@ -204,6 +228,7 @@
         var $active = $('li.active', this.$select);
         switch (event.keyCode) {
             case 13:
+                this.setSelectionIndex($active.index());
                 this.$element.val($active.attr('data-value'));
             case 27:
                 this.$element.trigger('blur.hide');
@@ -244,6 +269,27 @@
      */
     Autocomplete.prototype.onHover = function (event) {
         this.selected(event.currentTarget);
+    }
+
+    /**
+     * 获取选中索引
+     * 默认未选中: -1
+     * @returns {number|*}
+     */
+    Autocomplete.prototype.getSelectedIndex = function () {
+        return this.selectedIndex;
+    }
+
+    /**
+     * 设置选中索引
+     * @param selectedIndex
+     */
+    Autocomplete.prototype.setSelectionIndex = function (selectedIndex) {
+        if (selectedIndex < -1) selectedIndex = -1;
+        this.selectedIndex = selectedIndex;
+        var $active = this.$select.find('li:eq('+ this.selectedIndex +')');
+        this.selected($active);
+        this.$element.trigger('selected', [$active.data('data'), selectedIndex]);    // 触发事件
     }
 
     /*********** 扩展方法 *************/

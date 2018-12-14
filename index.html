@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>demo</title>
-    <link rel="stylesheet" type="text/css" href="css/autocomplete.css" />
+    <link rel="stylesheet" type="text/css" href="css/autocomplete.min.css" />
 </head>
 <body>
 <input type="text" id="input" />
 <script src="js/jquery.js"></script>
-<script src="js/autocomplete.js"></script>
+<script src="js/autocomplete.min.js"></script>
 <script>
     $(function () {
         $('#input').autocomplete({
             data: ['值1', '值2', '值3', '值4']
+        }).on('selected', function (event, value, index) {
+            console.log('值：' + value);
+            console.log('索引：' + index);
         });
     });
 </script>
