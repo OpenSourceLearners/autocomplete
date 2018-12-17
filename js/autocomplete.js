@@ -71,15 +71,16 @@
         this.setOptions(options);
         this.$element = $(el);
         this.$select = null;
-        this._data = options.data || [];
+        // this._data = options.data || [];
         this.lock = false;
         this.selectedIndex = -1;
         // 判断是否有ajax请求地址
         if (typeof options.ajax === 'string') {
             this.ajaxRenderOptions();
         } else {
-            this.renderOptions();
-            this.bindEvent();
+            // this.renderOptions();
+            // this.bindEvent();
+            this.updateData(options.data);
         }
     }
 
@@ -117,10 +118,11 @@
             // 处理返回的数据
             typeof that.options.handleData === 'function' && (res = that.options.handleData(res));
             res = res || {};
-            res.data = res.data || [];
-            that._data = res.data;
-            that.renderOptions();
-            that.bindEvent();
+            // res.data = res.data || [];
+            // that._data = res.data;
+            // that.renderOptions();
+            that.updateData(res.data);
+            // that.bindEvent();
         });
     }
 
@@ -191,8 +193,9 @@
         this.$select.css(css).addClass('is-show');
         // var $active = $('li:contains('+ this.$element.val() +')', this.$select);
         // this.selected($active.length && this.$element.val() ? $active : $('li:first', this.$select));
-        if (!lock) this.selected(this.$select.find('li:eq('+ this.selectedIndex +')'));
+        // if (!lock) this.selected(this.$select.find('li:eq('+ this.selectedIndex +')'));
         // lock || this.selected($('li:first', this.$select));
+        if (!lock) this.renderSelected();
     }
 
     /**
@@ -266,6 +269,15 @@
     }
 
     /**
+     * 渲染选中
+     */
+    Autocomplete.prototype.renderSelected = function () {
+        $('li.active', this.$select).removeClass('active');
+        if (this.selectedIndex <= -1) return
+        this.$select.find('li:eq('+ this.selectedIndex +')').addClass('active');
+    }
+
+    /**
      * 经过选中
      * @param event
      */
@@ -290,14 +302,25 @@
         if (this.selectedIndex == selectedIndex) return
         if (selectedIndex < -1) selectedIndex = -1;
         this.selectedIndex = selectedIndex;
-        var $active = this.$select.find('li:eq('+ this.selectedIndex +')');
-        this.selected($active);
-        this.$element.trigger('selected', [$active.data('data'), selectedIndex]);    // 触发事件
+        this.renderSelected();
+        selectedIndex != -1 && this.$element.trigger('selected', [this._data[selectedIndex], selectedIndex]);    // 触发事件
+    }
+
+    /**
+     * 更新下拉数据
+     * @param data
+     */
+    Autocomplete.prototype.updateData = function (data) {
+        if (!$.isArray(data)) data = []
+        this.selectedIndex = -1;
+        this._data = data;
+        this.renderOptions();
+        this.bindEvent();
     }
 
     /*********** 扩展方法 *************/
     // 继承输入下拉方法
-    function autocomplete (options, param) {
+    function autocomplete (options) {
         // 初始化配置
         if (typeof options === 'object') {
             options = $.extend({}, Autocomplete.DEFAULTOPTIONS, options);
@@ -309,8 +332,10 @@
                 this._autocomplete = new Autocomplete(el, options);
             })
         } else if (typeof options === 'string') {
+            // 处理传递的参数
+            var param = Array.prototype.slice.call(arguments, 1);
             this.each(function (index, el) {
-                this.autocomplete && typeof this.autocomplete[options] === 'function' && this.autocomplete[options](param);
+                this._autocomplete && typeof this._autocomplete[options] === 'function' && this._autocomplete[options].apply(this._autocomplete, param);
             })
         } else {
             throw new Error('输入下拉插件：参数错误');

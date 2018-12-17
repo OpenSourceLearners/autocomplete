@@ -7,6 +7,7 @@
 </head>
 <body>
 <input type="text" id="input" />
+<button id="updateBtn">更新数据</button>
 <script src="js/jquery.js"></script>
 <script src="js/autocomplete.min.js"></script>
 <script>
@@ -16,6 +17,9 @@
         }).on('selected', function (event, value, index) {
             console.log('值：' + value);
             console.log('索引：' + index);
+        });
+        $('#updateBtn').on('click', function () {
+            $('#input').autocomplete('updateData', ['值5', '值6', '值7', '值8']);
         });
     });
 </script>
