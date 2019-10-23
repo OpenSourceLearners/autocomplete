@@ -37,6 +37,11 @@ render: null            // 渲染内容，可以是函数（function ({元素})�
 ajax: null              // 异步请求获取数据渲染
 params: {}              // 请求参数
 handleData: null        // 异步返回数据处理函数
+// v1.0.2
+filter: false,          // 开启过滤
+filterFields: 'keyword',  // 过滤查询字段，ajax请求才有用
+fill: 'value',          // 填充值，默认是value，或者是：html
+immediate: true,        // 立即调用ajax获取数据
 ```
 #### 5、事件
 
@@ -48,3 +53,6 @@ handleData: null        // 异步返回数据处理函数
 ## 版本说明：
   - v1.0.1
     - 新增选中事件
+  - v1.0.2
+    - 实现过滤数据
+    - 修复在未选中时上下键没有效果

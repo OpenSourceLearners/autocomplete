@@ -66,22 +66,36 @@
         return template;
     }
 
+    /**
+     * 转义正则字符串
+     * @param {string} str 需要转义的字符串
+     * @returns {string}
+     */
+    function escapeRegexpString (str) {
+        // 需要转义的字符
+        var escapeChar = '\\$()*+.[]?^{}|'.split('');
+        escapeChar.forEach(function (key) {
+            str = str.replace(new RegExp('\\' + key, 'g'), `\\${key}`)
+        })
+        return str
+    }
+
     /*********** 构造对象 **********/
+    /**
+     * 自动完成构造器
+     * @param {Jquery} el 绑定的元素
+     * @param {*} options 配置项
+     */
     function Autocomplete (el, options) {
+        // 初始化数据
         this.setOptions(options);
         this.$element = $(el);
-        this.$select = null;
-        // this._data = options.data || [];
+        this.$select = $('<ul></ul');
+        $('body').append(this.$select);
+        this.bindEvent();
         this.lock = false;
         this.selectedIndex = -1;
-        // 判断是否有ajax请求地址
-        if (typeof options.ajax === 'string') {
-            this.ajaxRenderOptions();
-        } else {
-            // this.renderOptions();
-            // this.bindEvent();
-            this.updateData(options.data);
-        }
+        this.init(options);
     }
 
     // 默认配置
@@ -92,10 +106,27 @@
         render: null,
         ajax: null,
         handleData: null,
-        params: {}
+        params: {},
+        filter: false,  // 开启过滤
+        filterFields: 'keyword', // 过滤查询字段，ajax请求才有用
+        fill: 'value', // 填充值，默认是value，或者是：html
+        immediate: true, // 立即调用ajax获取数据
     }
 
-    Autocomplete.prototype.version = 'v1.0.1';
+    Autocomplete.prototype.version = 'v1.0.2';
+
+    /**
+     * 初始化加载数据
+     */
+    Autocomplete.prototype.init = function (options) {
+        // 判断是否有ajax请求地址
+        if (typeof options.ajax === 'string') {
+            options.immediate && this.ajaxRenderOptions();
+        } else {
+            // this.renderOptions();
+            this.updateData(options.data);
+        }
+    }
 
     /**
      * 设置配置
@@ -103,6 +134,8 @@
      */
     Autocomplete.prototype.setOptions = function (options) {
         this.options = options;
+        // 校验配置
+        ['value', 'html'].indexOf(this.options.fill) === -1 && (this.options.fill = 'value');
         this.htmlKey = options.htmlKey || 'html';
         this.valueKey = options.valueKey || 'value';
         !$.isArray(this.options.selectClass) && (this.options.selectClass = [this.options.selectClass]);
@@ -114,7 +147,9 @@
      */
     Autocomplete.prototype.ajaxRenderOptions = function () {
         var that = this;
-        $.getJSON(this.options.ajax, this.options.params).then(function (res) {
+        var queryParams = {};
+        queryParams[this.options.filterFields] = this.$element.val();
+        $.getJSON(this.options.ajax, $.extend({}, this.options.params, queryParams)).then(function (res) {
             // 处理返回的数据
             typeof that.options.handleData === 'function' && (res = that.options.handleData(res));
             res = res || {};
@@ -129,7 +164,8 @@
     /**
      * 生成下拉
      */
-    Autocomplete.prototype.renderOptions = function () {
+    Autocomplete.prototype.renderOptions = function (data) {
+        this.selectedIndex = -1;
         // var html = ['<ul>'];
         // var that = this;
         // var render = this.options.render;
@@ -147,23 +183,28 @@
         // });
         // html.push('</ul>');
         // this.$select = $(html.join('')).addClass(this.options.selectClass.join(' '));
-        var $select = $('<ul></ul>');
+        if (!$.isArray(data)) data = this._data;
+        var $select = this.$select;
+        $select.empty();
         var that = this;
         var render = this.options.render;
-        $.each(this._data, function (i, item) {
-            var type = typeof item;
-            var label = type === 'object' ? item[that.htmlKey] : item;
+        $.each(data, function (i, item) {
+            // var type = typeof item;
+            var label = item.html;
             if (typeof render === 'function') {
-                label = render(item);
+                label = render(item._data);
             } else if (typeof render === 'string') {
-                label = stringTemplate(render, item);
+                label = stringTemplate(render, item._data);
             }
-            var $li = $('<li data-value="'+ (type === 'object' ? item[that.valueKey] : item) +'">'+ label +'</li>');
-            $li.data('data', item);
+            var $li = $('<li data-value="'+ item[that.options.fill] +'">'+ label +'</li>');
+            $li.data('data', item._data);
             $select.append($li);
         })
-        this.$select = $select.addClass(this.options.selectClass.join(' '));
-        $('body').append(this.$select);
+        $select.addClass(this.options.selectClass.join(' '));
+        // 是否已经挂载
+        // var mounted = !!this.$select;
+        // this.$select = $select.addClass(this.options.selectClass.join(' '));
+        // mounted || $('body').append(this.$select);
     }
 
     /**
@@ -174,6 +215,7 @@
         this.$element.on('focus.show', $.proxy(this.onShowSelect, this));
         this.$element.on('blur.hide', $.proxy(this.onHideSelect, this));
         this.$element.on('keyup.instruct', $.proxy(this.onInstruct, this));
+        this.$element.on('input.filter', debounce(200, $.proxy(this.onFilter, this)));
         this.$select.on('mousedown.fill', 'li', $.proxy(this.onFill, this));
         this.$select.on('mouseup.fill', 'li', $.proxy(this.onFill, this));
         this.$select.on('mousemove.hover', 'li', debounce(7, $.proxy(this.onHover, this)));
@@ -239,13 +281,36 @@
                 this.$element.trigger('blur.hide');
                 break;
             case 38:
-                var $prev = $active.prev();
+                var $prev = $active.length === 0 ? this.$select.find(':first') : $active.prev();
                 $prev.length && this.selected($prev);
                 break;
             case 40:
-                var $next = $active.next();
+                var $next = $active.length === 0 ? this.$select.find(':first') : $active.next();
                 $next.length && this.selected($next);
                 break;
+        }
+    }
+
+    /**
+     * 过滤数据
+     * @param event
+     */
+    Autocomplete.prototype.onFilter = function (event) {
+        if (!this.options.filter) return;
+        // 判断是否有ajax请求地址
+        if (typeof this.options.ajax === 'string') {
+            this.ajaxRenderOptions();
+        } else {
+            // this.renderOptions();
+            // 查询关键字
+            var keyword = this.$element.val();
+            var reg = new RegExp(escapeRegexpString(keyword));
+            var data = [];
+            $.each(this._data, function (index, value) {
+                reg.test(value.html) && data.push(value);
+            });
+            // 重新渲染
+            this.renderOptions(data);
         }
     }
 
@@ -299,11 +364,12 @@
      * @param selectedIndex
      */
     Autocomplete.prototype.setSelectionIndex = function (selectedIndex) {
-        if (this.selectedIndex == selectedIndex) return
+        if (this.selectedIndex == selectedIndex) return;
         if (selectedIndex < -1) selectedIndex = -1;
         this.selectedIndex = selectedIndex;
         this.renderSelected();
-        selectedIndex != -1 && this.$element.trigger('selected', [this._data[selectedIndex], selectedIndex]);    // 触发事件
+        var data = this.$select.find(':eq('+ selectedIndex +')').data('data');
+        selectedIndex != -1 && this.$element.trigger('selected', [data, this._originData.indexOf(data)]);    // 触发事件
     }
 
     /**
@@ -311,11 +377,21 @@
      * @param data
      */
     Autocomplete.prototype.updateData = function (data) {
-        if (!$.isArray(data)) data = []
-        this.selectedIndex = -1;
-        this._data = data;
+        if (!$.isArray(data)) data = [];
+        var that = this;
+        // 存储原始数据
+        this._originData = data;
+        // 处理数据
+        this._data = data.map(function (value) {
+            var type = typeof value;
+            return $.extend({}, {
+                value: type === 'object' ? value[that.valueKey] : value,
+                html: type === 'object' ? value[that.htmlKey] : value,
+                _data: value,
+            });
+        });
         this.renderOptions();
-        this.bindEvent();
+        // this.bindEvent();
     }
 
     /*********** 扩展方法 *************/

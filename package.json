@@ -1,6 +1,6 @@
 {
   "name": "autocomplete",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "输入下拉插件",
   "main": "autocomplete.js",
   "scripts": {

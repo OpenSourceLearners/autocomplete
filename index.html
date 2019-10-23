@@ -13,8 +13,20 @@
 <script>
     $(function () {
         $('#input').autocomplete({
-            data: ['值1', '值2', '值3', '值4']
+            data: [{
+                value: '1',
+                html: '值1'
+            }, {
+                value: '2',
+                html: '值2'
+            }, {
+                value: '3',
+                html: '值3'
+            }],
+            fill: 'html',
+            filter: true,
         }).on('selected', function (event, value, index) {
+            console.log(value);
             console.log('值：' + value);
             console.log('索引：' + index);
         });
