@@ -91,6 +91,7 @@
         this.setOptions(options);
         this.$element = $(el);
         this.$select = $('<ul></ul');
+        this.$select.addClass(this.options.selectClass.join(' '));
         $('body').append(this.$select);
         this.bindEvent();
         this.lock = false;
@@ -111,6 +112,8 @@
         filterFields: 'keyword', // 过滤查询字段，ajax请求才有用
         fill: 'value', // 填充值，默认是value，或者是：html
         immediate: true, // 立即调用ajax获取数据
+        ajaxOptions: {},
+        handleSendData: null, // 处理请求数据
     }
 
     Autocomplete.prototype.version = 'v1.0.2';
@@ -149,16 +152,26 @@
         var that = this;
         var queryParams = {};
         queryParams[this.options.filterFields] = this.$element.val();
-        $.getJSON(this.options.ajax, $.extend({}, this.options.params, queryParams)).then(function (res) {
-            // 处理返回的数据
+        var data = $.extend({}, this.options.params, queryParams);
+        typeof this.options.handleSendData === 'function' && (data = this.options.handleSendData(data));
+        $.ajax($.extend({
+            url: this.options.ajax,
+            data: data
+        }, this.options.ajaxOptions)).then(function (res) {
             typeof that.options.handleData === 'function' && (res = that.options.handleData(res));
             res = res || {};
-            // res.data = res.data || [];
-            // that._data = res.data;
-            // that.renderOptions();
-            that.updateData(res.data);
-            // that.bindEvent();
+            that.updateData(res.data)
         });
+        // $.getJSON(this.options.ajax, $.extend({}, this.options.params, queryParams)).then(function (res) {
+        //     // 处理返回的数据
+        //     typeof that.options.handleData === 'function' && (res = that.options.handleData(res));
+        //     res = res || {};
+        //     // res.data = res.data || [];
+        //     // that._data = res.data;
+        //     // that.renderOptions();
+        //     that.updateData(res.data);
+        //     // that.bindEvent();
+        // });
     }
 
     /**
@@ -199,8 +212,8 @@
             var $li = $('<li data-value="'+ item[that.options.fill] +'">'+ label +'</li>');
             $li.data('data', item._data);
             $select.append($li);
-        })
-        $select.addClass(this.options.selectClass.join(' '));
+        });
+        // $select.addClass(this.options.selectClass.join(' '));
         // 是否已经挂载
         // var mounted = !!this.$select;
         // this.$select = $select.addClass(this.options.selectClass.join(' '));

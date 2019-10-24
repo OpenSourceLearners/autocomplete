@@ -42,6 +42,9 @@ filter: false,          // 开启过滤
 filterFields: 'keyword',  // 过滤查询字段，ajax请求才有用
 fill: 'value',          // 填充值，默认是value，或者是：html
 immediate: true,        // 立即调用ajax获取数据
+// v1.0.3
+ajaxOptions: {},        // ajax请求配置项
+handleSendData: null,   // 处理请求数据
 ```
 #### 5、事件
 
@@ -56,3 +59,5 @@ immediate: true,        // 立即调用ajax获取数据
   - v1.0.2
     - 实现过滤数据
     - 修复在未选中时上下键没有效果
+  - v1.0.3
+    - 扩展ajax请求配置项和数据处理
